@@ -1,0 +1,33 @@
+{
+  "name": "website-downloader",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "dev": "export NODE_ENV=Development && npm start",
+    "postinstall": "prisma skills sync || exit 0"
+  },
+  "dependencies": {
+    "archiver": "^3.1.1",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~4.19.2",
+    "hbs": "~4.2.0",
+    "http-errors": "~1.6.3",
+    "jszip": "^3.8.0",
+    "morgan": "~1.9.1",
+    "socket.io": "^2.5.0",
+    "socket.io-client": "^2.5.0"
+  },
+  "devDependencies": {
+    "@prisma/client": "^7.10.0",
+    "@types/node": "^26.6.4",
+    "bullmq": "^6.3.11",
+    "ioredis": "^6.0.0",
+    "playwright": "^1.63.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^7.0.2",
+    "zod": "^4.6.5",
+    "prisma": "8.0.0-rc.20"
+  }
+}

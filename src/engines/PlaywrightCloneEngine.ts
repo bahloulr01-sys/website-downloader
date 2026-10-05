@@ -1,0 +1,75 @@
+import { CloneEngine } from './CloneEngine';
+import { chromium, BrowserContext, Page as PlaywrightPage } from 'playwright';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export class PlaywrightCloneEngine extends CloneEngine {
+  private context: BrowserContext | null = null;
+  private isCancelled: boolean = false;
+
+  async start(): Promise<void> {
+    try {
+      await prisma.cloneJob.update({
+        where: { id: this.jobId },
+        data: { status: 'LAUNCHING_BROWSER', currentStep: 'Launching browser...', progress: 5 }
+      });
+
+      const browser = await chromium.launch({ headless: true });
+      this.context = await browser.newContext();
+      
+      if (this.isCancelled) {
+        await browser.close();
+        return;
+      }
+
+      await prisma.cloneJob.update({
+        where: { id: this.jobId },
+        data: { status: 'DISCOVERING', currentStep: 'Discovering pages...', progress: 10 }
+      });
+
+      const page = await this.context.newPage();
+      await page.goto(this.startUrl, { waitUntil: 'networkidle' });
+
+      // Save screenshot
+      const screenshotBuffer = await page.screenshot({ fullPage: true });
+      // TODO: Save screenshotBuffer to storage
+      
+      const html = await page.content();
+      
+      await prisma.page.create({
+        data: {
+          projectId: this.projectId,
+          url: this.startUrl,
+          path: '/',
+          title: await page.title(),
+          status: 'COMPLETED',
+          html: html,
+        }
+      });
+
+      await prisma.cloneJob.update({
+        where: { id: this.jobId },
+        data: { status: 'COMPLETED', currentStep: 'Done', progress: 100, completedAt: new Date(), pagesCompleted: 1 }
+      });
+
+      await browser.close();
+    } catch (error) {
+      await prisma.cloneJob.update({
+        where: { id: this.jobId },
+        data: { status: 'FAILED', error: (error as Error).message }
+      });
+    }
+  }
+
+  async cancel(): Promise<void> {
+    this.isCancelled = true;
+    if (this.context) {
+      await this.context.browser()?.close();
+    }
+    await prisma.cloneJob.update({
+      where: { id: this.jobId },
+      data: { status: 'CANCELLED' }
+    });
+  }
+}
