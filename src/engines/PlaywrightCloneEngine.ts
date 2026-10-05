@@ -2,11 +2,19 @@ import { CloneEngine } from './CloneEngine';
 import { chromium, BrowserContext, Page as PlaywrightPage } from 'playwright';
 import { PrismaClient } from '@prisma/client';
 
+import { activeSessions } from '../auth/SessionManager';
+
 const prisma = new PrismaClient();
 
 export class PlaywrightCloneEngine extends CloneEngine {
   private context: BrowserContext | null = null;
   private isCancelled: boolean = false;
+  private sessionId?: string;
+
+  constructor(jobId: string, projectId: string, startUrl: string, sessionId?: string) {
+    super(jobId, projectId, startUrl);
+    this.sessionId = sessionId;
+  }
 
   async start(): Promise<void> {
     try {
@@ -15,11 +23,23 @@ export class PlaywrightCloneEngine extends CloneEngine {
         data: { status: 'LAUNCHING_BROWSER', currentStep: 'Launching browser...', progress: 5 }
       });
 
-      const browser = await chromium.launch({ headless: true });
-      this.context = await browser.newContext();
+      let page: PlaywrightPage;
+      let browserToClose = false;
+
+      if (this.sessionId && activeSessions[this.sessionId]) {
+        this.context = activeSessions[this.sessionId].context;
+        // Don't close the shared browser immediately if we might need it later,
+        // but for this job's scope we just use its context.
+      } else {
+        const browser = await chromium.launch({ headless: true });
+        this.context = await browser.newContext();
+        browserToClose = true;
+      }
       
       if (this.isCancelled) {
-        await browser.close();
+        if (browserToClose && this.context) {
+          await this.context.browser()?.close();
+        }
         return;
       }
 
@@ -53,7 +73,9 @@ export class PlaywrightCloneEngine extends CloneEngine {
         data: { status: 'COMPLETED', currentStep: 'Done', progress: 100, completedAt: new Date(), pagesCompleted: 1 }
       });
 
-      await browser.close();
+      if (browserToClose && this.context) {
+        await this.context.browser()?.close();
+      }
     } catch (error) {
       await prisma.cloneJob.update({
         where: { id: this.jobId },

@@ -2,10 +2,10 @@ import { Worker } from 'bullmq';
 import { PlaywrightCloneEngine } from '../engines/PlaywrightCloneEngine';
 
 const worker = new Worker('clone', async job => {
-  const { jobId, projectId, url } = job.data;
+  const { jobId, projectId, url, sessionId } = job.data;
   console.log(`[Worker] Processing job ${jobId} for project ${projectId}`);
   
-  const engine = new PlaywrightCloneEngine(jobId, projectId, url);
+  const engine = new PlaywrightCloneEngine(jobId, projectId, url, sessionId);
   await engine.start();
 }, {
   connection: {

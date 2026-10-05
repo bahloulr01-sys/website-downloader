@@ -24,6 +24,7 @@ router.post('/', async (req, res) => {
 // POST /api/projects/:id/clone
 router.post('/:id/clone', async (req, res) => {
   const { id } = req.params;
+  const { sessionId } = req.body;
   const project = await prisma.project.findUnique({ where: { id } });
   
   if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -32,7 +33,7 @@ router.post('/:id/clone', async (req, res) => {
     data: { projectId: id, status: 'QUEUED', currentStep: 'Added to queue' }
   });
 
-  await cloneQueue.add('clone-website', { jobId: job.id, projectId: id, url: project.sourceUrl });
+  await cloneQueue.add('clone-website', { jobId: job.id, projectId: id, url: project.sourceUrl, sessionId });
 
   res.json(job);
 });

@@ -20,14 +20,14 @@
     "socket.io-client": "^2.5.0"
   },
   "devDependencies": {
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "^5.22.0",
     "@types/node": "^26.6.4",
     "bullmq": "^6.3.11",
     "ioredis": "^6.0.0",
     "playwright": "^1.63.0",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "typescript": "^7.0.2",
-    "zod": "^4.6.5",
-    "prisma": "8.0.0-rc.20"
+    "zod": "^4.6.5"
   }
 }
